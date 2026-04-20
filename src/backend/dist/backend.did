@@ -1,0 +1,203 @@
+type UserRole = 
+ variant {
+   admin;
+   guest;
+   user;
+ };
+type TourPhoto = 
+ record {
+   alt: text;
+   id: text;
+   isPrimary: bool;
+   url: text;
+ };
+type TourConfig = 
+ record {
+   description: text;
+   duration: nat;
+   highlights: vec text;
+   included: vec text;
+   isActive: bool;
+   maxCapacity: nat;
+   meetingPoint: MeetingPoint;
+   photos: vec TourPhoto;
+   price: nat;
+   subtitle: text;
+   title: text;
+ };
+type TimeSlotId = nat;
+type TimeSlot = 
+ record {
+   bookedCount: nat;
+   date: text;
+   endTime: text;
+   id: TimeSlotId;
+   maxCapacity: nat;
+   startTime: text;
+ };
+type Time = int;
+type SlotSummary = 
+ record {
+   bookedCount: nat;
+   endTime: text;
+   id: nat;
+   maxCapacity: nat;
+   startTime: text;
+ };
+type PaymentStatus = 
+ variant {
+   failed;
+   paid;
+   pending;
+   refunded;
+ };
+type MeetingPoint = 
+ record {
+   address: text;
+   coordinates: Coordinates;
+   instructions: text;
+   landmark: opt text;
+   name: text;
+ };
+type DateSlotSummary = 
+ record {
+   date: text;
+   slots: vec SlotSummary;
+   totalBookings: nat;
+   totalCapacity: nat;
+ };
+type Coordinates = 
+ record {
+   lat: float64;
+   lng: float64;
+ };
+type BookingStatus = 
+ variant {
+   cancelled;
+   completed;
+   confirmed;
+   pending;
+ };
+type BookingId = nat;
+type Booking = 
+ record {
+   createdAt: Time;
+   customerEmail: text;
+   customerName: text;
+   customerPhone: opt text;
+   id: BookingId;
+   participantCount: nat;
+   paymentId: opt text;
+   paymentStatus: PaymentStatus;
+   specialRequests: opt text;
+   status: BookingStatus;
+   timeSlotId: TimeSlotId;
+   totalPrice: nat;
+   updatedAt: Time;
+ };
+type AdminStats = 
+ record {
+   averageBookingValue: nat;
+   averageParticipants: nat;
+   cancelledBookings: nat;
+   completedBookings: nat;
+   totalBookings: nat;
+   totalRevenue: nat;
+   upcomingBookings: nat;
+ };
+service : {
+  _initializeAccessControl: () -> ();
+  addAllowedOrigin: (origin: text) -> ();
+  assignCallerUserRole: (user: principal, role: UserRole) -> ();
+  cancelBooking: (bookingId: BookingId) -> (Booking);
+  checkAvailability: (slotId: TimeSlotId, participantCount: nat) ->
+   (bool) query;
+  completeBooking: (bookingId: BookingId) -> (Booking);
+  confirmBooking: (bookingId: BookingId, paymentId: text) -> (Booking);
+  createBooking: (timeSlotId: TimeSlotId, customerName: text, customerEmail:
+   text, customerPhone: opt text, participantCount: nat, specialRequests:
+   opt text) -> (Booking);
+  createCheckoutSession: (bookingId: BookingId, successUrl: text, cancelUrl:
+   text) -> (text);
+  createTimeSlot: (date: text, startTime: text, endTime: text, maxCapacity:
+   nat) -> (TimeSlot);
+  deleteTimeSlot: (slotId: TimeSlotId) -> (bool);
+  getAllBookings: () -> (vec Booking) query;
+  getAllSlots: (startDate: text, endDate: text) -> (vec TimeSlot) query;
+  getAllowedOrigins: () -> (vec text) query;
+  getAvailableCapacity: (slotId: TimeSlotId) -> (nat) query;
+  getAvailableSlots: (startDate: text, endDate: text) -> (vec TimeSlot) query;
+  getBooking: (bookingId: BookingId) -> (opt Booking) query;
+  getBookingStats: () -> (AdminStats) query;
+  getBookingsByEmail: (email: text) -> (vec Booking) query;
+  getBookingsBySlot: (slotId: TimeSlotId) -> (vec Booking) query;
+  getCallerUserRole: () -> (UserRole) query;
+  getEmailKeyStatus: () -> (opt text) query;
+  getRevenueByPeriod: (startDate: text, endDate: text) ->
+   (record {
+      bookingCount: nat;
+      participantCount: nat;
+      totalRevenue: nat;
+    }) query;
+  getSenderEmail: () -> (opt text) query;
+  getSenderName: () -> (text) query;
+  getSlotsForCalendar: (startDate: text, endDate: text) ->
+   (vec DateSlotSummary) query;
+  getStripeKeyStatus: () -> (opt text) query;
+  getTimeSlot: (slotId: TimeSlotId) -> (opt TimeSlot) query;
+  getTourConfig: () -> (TourConfig) query;
+  getTourDetails: () ->
+   (record {
+      description: text;
+      duration: nat;
+      highlights: vec text;
+      included: vec text;
+      isActive: bool;
+      maxCapacity: nat;
+      meetingPoint: MeetingPoint;
+      photoCount: nat;
+      price: nat;
+      subtitle: text;
+      title: text;
+    }) query;
+  getUpcomingBookings: () -> (vec Booking) query;
+  healthCheck: () -> (bool) query;
+  isCallerAdmin: () -> (bool) query;
+  removeAllowedOrigin: (origin: text) -> ();
+  sendBookingConfirmationEmail: (bookingId: BookingId) -> (text);
+  sendTestEmail: (toEmail: text) -> (text);
+  setEmailApiKey: (key: text) -> (text);
+  setSenderEmail: (email: text) -> ();
+  setSenderName: (name: text) -> ();
+  setStripeAuthorization: (key: text) -> (text);
+  transform:
+   (record {
+      response:
+       record {
+         body: blob;
+         headers: vec record {
+                        name: text;
+                        value: text;
+                      };
+         status: nat;
+       };}) ->
+   (record {
+      body: blob;
+      headers: vec record {
+                     name: text;
+                     value: text;
+                   };
+      status: nat;
+    }) query;
+  updateMeetingPoint: (name: text, address: text, lat: float64, lng: 
+   float64, instructions: text, landmark: opt text) -> (MeetingPoint);
+  updateTimeSlot: (slotId: TimeSlotId, date: opt text, startTime: opt text,
+   endTime: opt text, maxCapacity: opt nat) -> (TimeSlot);
+  updateTourConfig: (title: opt text, subtitle: opt text, description:
+   opt text, duration: opt nat, price: opt nat, maxCapacity: opt nat,
+   highlights: opt vec text, included: opt vec text, isActive: opt bool) ->
+   (TourConfig);
+  verifyAndConfirmBooking: (sessionId: text, bookingId: BookingId) ->
+   (Booking);
+  whoami: () -> (principal) query;
+}
